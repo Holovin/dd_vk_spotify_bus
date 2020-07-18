@@ -1,0 +1,23 @@
+{
+  "name": "dd_vk_spotify_bus",
+  "version": "0.0.1",
+  "description": "Import music from VK to Spotify ",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Holovin/dd_vk_spotify_bus.git"
+  },
+  "author": "Alex Holovin",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Holovin/dd_vk_spotify_bus/issues"
+  },
+  "homepage": "https://github.com/Holovin/dd_vk_spotify_bus#readme",
+  "dependencies": {
+    "nconf": "^0.10.0",
+    "node-fetch": "^2.6.0"
+  }
+}
