@@ -106,3 +106,4 @@ dist
 # dd
 .idea/
 config.json
+.DS_Store
