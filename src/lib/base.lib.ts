@@ -19,6 +19,10 @@ class BaseLib {
     public getIsLogged() {
         return this.isLogged;
     }
+
+    public getUser() {
+        return this.user;
+    }
 }
 
 export { BaseLib, Track }

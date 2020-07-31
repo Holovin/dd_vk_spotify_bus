@@ -29,8 +29,9 @@ PrettyError.start();
             process.exit(1);
         }
 
-        const musicVK = await app.vkLib.parseMusic(28392295);
-        log.info(`Parse VK music — done, tracks count: ${musicVK.length}`);
+        const userId = app.vkLib.getUser().id;
+        const musicVK = await app.vkLib.parseMusic(userId);
+        log.info(`Parse VK music from user id${userId} done, tracks count: ${musicVK.length}`);
 
         const playlistId = await app.spotifyLib.apiAddPlaylist('VK Import 2');
         log.info(`Create Spotify playlist - done, id: ${playlistId}`);
