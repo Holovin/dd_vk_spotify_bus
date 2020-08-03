@@ -187,7 +187,7 @@ class SpotifyLib extends BaseLib {
             uri: result.uri,
         };
 
-        this.log.debug(`Logged as ${this.user.id}`);
+        this.log.info(`Logged as ${this.user.id}`);
         this.isLogged = true;
 
         return LibStatus.NO_ERROR;

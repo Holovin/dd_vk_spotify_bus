@@ -9,6 +9,15 @@ import Fuse from 'fuse.js';
 
 
 class App {
+    private static readonly RE_NO_SQUARE_BRACKETS = /\[.*\]/gi;
+    private static readonly RE_NO_FEAT = /feat\.?/gi;
+    private static readonly RE_ADS_LINKS = /https?:\/\/([^\s\\])*/gi;
+    private static readonly RE_ADS_LINKS_VK = /vk\.com([^\s\\])*/gi;
+    private static readonly RE_USELESS_REMIX = /\(?original.*mix\)?/gi;
+    private static readonly RE_TRASH = /(\(320\))/gi;
+    private static readonly RE_TRASH_NEED_SPACE = /(\sx\s)|(\s×\s)|(\s&\s)/gi;
+    private static readonly RE_REMIX = /(.*remix.*)|(.*edit.*)|(.*flip.*)/i;
+
     public spotifyLib: SpotifyLib;
     public vkLib: VkLib;
 
@@ -114,12 +123,18 @@ class App {
         return this.spotifyLib.apiMe();
     }
 
-    public selectTrackFromSearchSimple(sourceTrack: Track, spotifyTracksSearchResult: Track[], options): Track {
+    public selectTrackFromSearchSimple(sourceTrack: Track, spotifyTracksSearchResult: Track[], onlyRemixes = false): Track {
         if (!spotifyTracksSearchResult.length) {
             return null;
         }
 
-        return spotifyTracksSearchResult[0];
+        const result = this.checkRemixes(sourceTrack, spotifyTracksSearchResult);
+
+        if (onlyRemixes) {
+            return result;
+        }
+
+        return result ?? spotifyTracksSearchResult[0];
     }
 
     public selectTrackFromSearchFuzz(sourceTrack: Track, spotifyTracksSearchResult: Track[], options): Track {
@@ -168,8 +183,76 @@ class App {
     }
 
     public cleanSearchString(searchString: string): string {
-        // TODO
-        return searchString;
+        const searchStringClean = searchString
+            .replace(App.RE_NO_SQUARE_BRACKETS, '')
+            .replace(App.RE_NO_FEAT, '')
+            .replace(App.RE_ADS_LINKS, '')
+            .replace(App.RE_ADS_LINKS_VK, '')
+            .replace(App.RE_USELESS_REMIX, '')
+            .replace(App.RE_TRASH, '')
+            .replace(App.RE_TRASH_NEED_SPACE, ' ')
+        ;
+
+        this.log.debug(`Clean: BEFORE: ${searchString}`);
+        this.log.debug(`Clean: AFTER:  ${searchStringClean}`);
+
+        return searchStringClean;
+    }
+
+    public hardCleanSearchString(searchString: string) {
+        const searchStringClean = searchString
+            // remove 2nd artist and feat. parts
+            .replace(/[,.]\s*.*[-—(]+\s+/, ' ')
+            // remove all flood symbols
+            .replace(/[-—×&,~]/ig, '')
+        ;
+
+        this.log.debug(`Clean2: BEFORE: ${searchString}`);
+        this.log.debug(`Clean2: AFTER: ${searchStringClean}`);
+
+        return searchStringClean;
+    }
+
+    public extremeCleanSearchString(searchString: string) {
+        // remove all (remix ...) and [remix ...] parts
+        const searchStringClean = searchString.replace(/(\(.*\))|(\[.*\])/gi, '');
+
+        this.log.debug(`Clean3: BEFORE: ${searchString}`);
+        this.log.debug(`Clean3: AFTER: ${searchStringClean}`);
+
+        return searchStringClean;
+    }
+
+    private checkRemixes(sourceTrack: Track, spotifyTracksSearchResult: Track[]) {
+        const result = App.RE_REMIX.exec(sourceTrack.title);
+        if (result) {
+            const resultLeft = result[1] ? result[1].trim() : '';
+            const resultRight = result[2] ? result[2].trim() : '';
+
+            let searchRemixResult = this.checkRemixComparer(resultLeft, spotifyTracksSearchResult)
+            || this.checkRemixComparer(resultRight, spotifyTracksSearchResult);
+
+            if (searchRemixResult) {
+                return searchRemixResult;
+            }
+
+            this.log.debug(`Empty remix check! ${sourceTrack.searchString}`);
+        }
+
+        return null;
+    }
+
+    private checkRemixComparer(result, spotifyTracksSearchResult) {
+        if (result.length > 0) {
+            spotifyTracksSearchResult.forEach(track => {
+                if (result.search(track.searchString) !== -1) {
+                    this.log.verbose(`Remix found: ${result} === ${track.searchString}`);
+                    return track;
+                }
+            });
+        }
+
+        return null;
     }
 
     private updateSpotifySettings() {

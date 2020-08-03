@@ -42,12 +42,14 @@ class VkLib extends BaseLib {
         const output: Track[] = [];
 
         data.items.forEach(item => {
-            this.log.debug(`${item.artist} — ${item.title} :: ${item.duration}`);
+            const title = item.subtitle ? `${item.title} (${item.subtitle})` : item.title;
+
+            this.log.debug(`${item.artist} — ${title} :: ${item.duration}`);
 
             output.push({
-                searchString: `${item.artist} - ${item.title}`,
+                searchString: `${item.artist} - ${title}`,
                 artist: item.artist,
-                title: item.title,
+                title: title,
                 duration: item.duration,
                 id: item.id,
             });

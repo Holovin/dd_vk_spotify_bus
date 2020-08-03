@@ -11,6 +11,7 @@ import { SpotifyLib } from './lib/spotify.lib';
 
 PrettyError.start();
 
+// TODO: add [add+skip if exist] mode for playlist import
 (async () => {
     const log = Log.getLogger('main');
     const nconf = nconfLib.argv().env().file({ file: 'config.json' });
@@ -33,7 +34,11 @@ PrettyError.start();
         const musicVK = await app.vkLib.parseMusic(userId);
         log.info(`Parse VK music from user id${userId} done, tracks count: ${musicVK.length}`);
 
-        const playlistId = await app.spotifyLib.apiAddPlaylist('VK Import 2');
+        const playlistId = await app.spotifyLib.apiAddPlaylist(
+            `VK Import (${new Date().toLocaleTimeString('ru-RU')} / ${new Date().toLocaleDateString('ru-RU')})` ,
+            false,
+            false,
+            'Imported via https://github.com/Holovin/dd_vk_spotify_bus');
         log.info(`Create Spotify playlist - done, id: ${playlistId}`);
 
         const vkTracksChunks: Track[][] = chunk(musicVK, SpotifyLib.SPOTIFY_ADD_MAX_TRACKS);
@@ -43,22 +48,34 @@ PrettyError.start();
             const spotifyTrackCache: Track[] = [];
 
             for (const sourceTrack of vkTracksChunk) {
-                log.verbose(`Search track: ${sourceTrack.searchString}`);
+                log.info(`Track: ${sourceTrack.searchString}`);
 
-                // TODO: clean sourceTrack.searchString from links and other ads
-                const searchString = app.cleanSearchString(sourceTrack.searchString);
-                const spotifyTracks = await app.spotifyLib.apiSearchTrack(sourceTrack.searchString);
-                await app.sleep(100);
+                const searchString1 = app.cleanSearchString(sourceTrack.searchString);
+                const searchString2 = app.hardCleanSearchString(searchString1);
+                const searchString3 = app.extremeCleanSearchString(searchString2);
+                const searchArray = [...new Set([searchString1, searchString2, searchString3])];
+                let addFlag = false;
 
-                // const result = app.selectTrackFromSearchFuzz(sourceTrack, spotifyTracks, options);
-                const result = app.selectTrackFromSearchSimple(sourceTrack, spotifyTracks, options);
-                if (result) {
-                    spotifyTrackCache.push(result);
-                    log.verbose(`              ↑↑↑ add: ${result.searchString} (id: ${result.id}}`);
+                log.verbose(`Search array: (size = ${searchArray.length}) \n\t${searchArray.join('\n\t')}`);
 
-                } else {
-                    log.verbose(`              ↑↑↑ not found`);
+                for (const [i, searchString] of Object.entries(searchArray)) {
+                    log.verbose(`Search track: [${i}] ${searchString}`);
+                    const spotifyTracks = await app.spotifyLib.apiSearchTrack(searchString);
+                    await app.sleep(100);
+
+                    const result = app.selectTrackFromSearchSimple(sourceTrack, spotifyTracks, +i === (searchArray.length - 1));
+                    if (result) {
+                        spotifyTrackCache.push(result);
+                        addFlag = true;
+                        log.verbose(`              ↑↑↑ add: ${result.searchString} (id: ${result.id}}`);
+                        break;
+
+                    } else {
+                        log.verbose(`              ↑↑↑ not found`);
+                    }
                 }
+
+                addFlag ? log.info('Added...') : log.info('No result...');
             }
 
             const ids: string[] = [];
