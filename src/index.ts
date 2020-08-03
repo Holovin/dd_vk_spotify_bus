@@ -63,7 +63,7 @@ PrettyError.start();
                     const spotifyTracks = await app.spotifyLib.apiSearchTrack(searchString);
                     await app.sleep(100);
 
-                    const result = app.selectTrackFromSearchSimple(sourceTrack, spotifyTracks, +i === (searchArray.length - 1));
+                    const result = app.selectTrackFromSearchSimple(sourceTrack, spotifyTracks, +i !== (searchArray.length - 1));
                     if (result) {
                         spotifyTrackCache.push(result);
                         addFlag = true;

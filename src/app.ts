@@ -237,9 +237,10 @@ class App {
             }
 
             this.log.debug(`Empty remix check! ${sourceTrack.searchString}`);
+            return null;
         }
 
-        return null;
+        return spotifyTracksSearchResult[0];
     }
 
     private checkRemixComparer(result, spotifyTracksSearchResult) {
